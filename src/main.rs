@@ -1,8 +1,11 @@
-use std::{fs, io::BufReader, path::PathBuf};
-
 use anyhow::{bail, Context};
 use clap::{command, Parser};
 use serde::Deserialize;
+use std::{
+    fs::{self, OpenOptions},
+    io::{BufReader, BufWriter, Write},
+    path::PathBuf,
+};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -68,11 +71,13 @@ struct ObjectElement {
     y: f32,
 }
 
+#[derive(Debug)]
 struct Point {
     x: u32,
     y: u32,
 }
 
+#[derive(Debug)]
 enum EnemyType {
     Placeholder,
     Zombie,
@@ -81,12 +86,15 @@ enum EnemyType {
     AppleThrower,
 }
 
+#[derive(Debug)]
 struct Enemy {
     type_id: EnemyType,
     spawn_point: Point,
 }
 
+#[derive(Debug)]
 struct Zone {
+    name: String,
     width: u16,
     height: u16,
     metatile_factor: u16,
@@ -96,8 +104,42 @@ struct Zone {
     player_spawn_point: Point,
 }
 
+fn layer_to_tiles(map: &MapElement, layer: &LayerElement) -> anyhow::Result<Vec<u16>> {
+    let data = layer
+        .data
+        .content
+        .clone()
+        .context("Missing tile data for floor layer.")?;
+    let metatiles_result: Result<Vec<u16>, _> = data
+        .replace("\n", "")
+        .split(",")
+        .map(|tile| {
+            str::parse::<u16>(tile).context(format!("Failed to parse tile value: {}", tile))
+        })
+        .collect();
+    let metatiles = metatiles_result?;
+
+    if usize::from(map.width * map.height) != metatiles.len() {
+        bail!(
+            "Incorrect floor layer size: {} vs {}",
+            metatiles.len(),
+            map.width * map.height
+        );
+    }
+
+    // Expand the metatiles into 8x8 tiles
+    let metatile_factor = map.tile_width / 8;
+    let mt_squared = metatile_factor * metatile_factor;
+    let tiles: Vec<u16> = metatiles
+        .iter()
+        .flat_map(|&tile| (tile * mt_squared..tile * mt_squared + mt_squared).collect::<Vec<u16>>())
+        .collect();
+
+    Ok(tiles)
+}
+
 impl Zone {
-    fn from(map: &MapElement) -> anyhow::Result<()> {
+    fn from(map: &MapElement, name: String) -> anyhow::Result<Zone> {
         let floor_layer = map
             .layer
             .iter()
@@ -109,32 +151,43 @@ impl Zone {
             .find(|l| l.name == "Ceiling")
             .context("Missing tile layer 'Ceiling'")?;
 
+        let floor = layer_to_tiles(map, &floor_layer)?;
+        let ceiling = layer_to_tiles(map, &ceiling_layer)?;
+
         let metatile_factor = map.tile_width / 8;
-
-        let floor_data = floor_layer
-            .data
-            .content
-            .clone()
-            .context("Missing tile data for floor layer.")?;
-        let tiles_result: Result<Vec<u16>, _> = floor_data
-            .replace("\n", "")
-            .split(",")
-            .map(|tile| {
-                str::parse::<u16>(tile).context(format!("Failed to parse tile value: {}", tile))
-            })
-            .collect();
-        let floor = tiles_result?;
-
-        if usize::from(map.width * map.height) != floor.len() {
-            bail!(
-                "Incorrect floor layer size: {} vs {}",
-                floor.len(),
-                map.width * map.height
-            );
-        }
-
-        Ok(())
+        Ok(Zone {
+            name,
+            width: map.width,
+            height: map.height,
+            metatile_factor,
+            floor,
+            ceiling,
+            enemies: vec![],
+            player_spawn_point: Point { x: 0, y: 0 },
+        })
     }
+}
+
+fn write_header(destination: PathBuf, zone: &Zone) -> anyhow::Result<()> {
+    let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(destination)?;
+    let mut writer = BufWriter::new(file);
+
+    writeln!(&mut writer, "#pragma once")?;
+    writeln!(&mut writer)?;
+    writeln!(&mut writer, "namespace sp::{} {{", zone.name)?;
+
+    writeln!(&mut writer, "\tconstexpr uint8_t width() {{ return {}; }}", zone.width)?;
+    writeln!(&mut writer, "\tconstexpr uint8_t height() {{ return {}; }}", zone.height)?;
+
+    writeln!(&mut writer, "\tconstexpr uint8_t floor_tiles[1];")?;
+
+    writeln!(&mut writer, "}}")?;
+
+    Ok(())
 }
 
 fn main() {
@@ -153,9 +206,15 @@ fn convert(args: &Args) -> anyhow::Result<()> {
     let reader = BufReader::new(file);
     let map: MapElement = quick_xml::de::from_reader(reader)?;
 
-    println!("{:?}", map);
+    let name = args
+        .input
+        .file_stem()
+        .context("Unable to retrieve file stem")?
+        .to_str()
+        .context("Unable to convert file stem to string")?;
+    let zone = Zone::from(&map, name.to_string())?;
 
-    let zone = Zone::from(&map)?;
+    write_header(PathBuf::from(format!("sp_{}.h", name)), &zone)?;
 
     Ok(())
 }
