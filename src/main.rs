@@ -2,18 +2,16 @@ use anyhow::{bail, Context};
 use clap::{command, Parser};
 use serde::Deserialize;
 use std::{
-    fs::{self, OpenOptions},
-    io::{BufReader, BufWriter, Write},
-    path::PathBuf,
+    ffi::OsStr, fs::{self, OpenOptions}, io::{BufReader, BufWriter, Write}, path::PathBuf
 };
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
     #[arg(required = true)]
-    input: PathBuf,
-    #[arg(short, long)]
-    output: Option<PathBuf>,
+    input_directory: PathBuf,
+    #[arg(required = true, short, long)]
+    output_directory: PathBuf,
 }
 
 #[derive(Debug, Deserialize)]
@@ -180,41 +178,83 @@ fn write_header(destination: PathBuf, zone: &Zone) -> anyhow::Result<()> {
     writeln!(&mut writer)?;
     writeln!(&mut writer, "namespace sp::{} {{", zone.name)?;
 
-    writeln!(&mut writer, "\tconstexpr uint8_t width() {{ return {}; }}", zone.width)?;
-    writeln!(&mut writer, "\tconstexpr uint8_t height() {{ return {}; }}", zone.height)?;
+    writeln!(&mut writer, "\tconstexpr uint8_t width() {{ return {}; }}", zone.width * zone.metatile_factor)?;
+    writeln!(&mut writer, "\tconstexpr uint8_t height() {{ return {}; }}", zone.height * zone.metatile_factor)?;
 
-    writeln!(&mut writer, "\tconstexpr uint8_t floor_tiles[1];")?;
+    writeln!(&mut writer, "\tconstexpr uint8_t floor_tiles[{}];", zone.width * zone.height * zone.metatile_factor * zone.metatile_factor)?;
 
     writeln!(&mut writer, "}}")?;
 
     Ok(())
 }
 
+fn write_implementation(destination: PathBuf, zone: &Zone) -> anyhow::Result<()> {
+    let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(destination)?;
+    let mut writer = BufWriter::new(file);
+
+    writeln!(&mut writer, "#include \"sp_{}.h\"", zone.name)?;
+    writeln!(&mut writer)?;
+    writeln!(&mut writer, "namespace sp::{} {{", zone.name)?;
+
+    let tiles_csv: Vec<String> = zone.floor.iter().map(|t| t.to_string()).collect();
+    writeln!(&mut writer, "\tconstexpr uint8_t floor_tiles[{}] = {{", zone.width * zone.height * zone.metatile_factor * zone.metatile_factor)?;
+    writeln!(&mut writer, "\t\t{}", tiles_csv.join(","))?;
+    writeln!(&mut writer, "}}")?;
+
+    writeln!(&mut writer, "}}")?;
+    Ok(())
+}
+
 fn main() {
     let args = Args::parse();
 
-    println!("input: {:?} output: {:?}", args.input, args.output);
-
-    if let Err(e) = convert(&args) {
-        eprintln!("Conversion failed for {:?}: {}", args.input, e);
+    if let Err(e) = run(&args) {
+        eprintln!("Error during map conversion: {}", e);
         std::process::exit(1);
     }
 }
 
-fn convert(args: &Args) -> anyhow::Result<()> {
-    let file = fs::File::open(args.input.clone())?;
+fn run(args: &Args) -> anyhow::Result<()> {
+    for entry in args.input_directory.read_dir().context("Failed to read directory")? {
+        let path = entry.context("Failed to get file entry")?.path();
+        if path.extension() == Some(OsStr::new("tmx")) {
+            convert(&path, &args.output_directory)?;
+        }
+    }
+
+    Ok(())
+}
+
+fn convert(path: &PathBuf, output_directory: &PathBuf) -> anyhow::Result<()> {
+    let file = fs::File::open(path.clone())?;
     let reader = BufReader::new(file);
     let map: MapElement = quick_xml::de::from_reader(reader)?;
 
-    let name = args
-        .input
+    let name = path
         .file_stem()
         .context("Unable to retrieve file stem")?
         .to_str()
         .context("Unable to convert file stem to string")?;
     let zone = Zone::from(&map, name.to_string())?;
+    println!("{:?}", zone);
 
-    write_header(PathBuf::from(format!("sp_{}.h", name)), &zone)?;
+    let mut header_path = PathBuf::new();
+    header_path.push(output_directory);
+    header_path.push(format!("sp_{}.h", name));
+
+    println!("Writing {:?}", header_path);
+    write_header(header_path, &zone)?;
+
+    let mut implementation_path = PathBuf::new();
+    implementation_path.push(output_directory);
+    implementation_path.push(format!("sp_{}.cpp", name));
+
+    println!("Writing {:?}", implementation_path);
+    write_implementation(implementation_path, &zone)?;
 
     Ok(())
 }
