@@ -19,6 +19,7 @@ pub fn write_header(destination: PathBuf, zone: &Zone) -> anyhow::Result<()> {
     writeln!(&mut writer, "\tconstexpr uint8_t height() {{ return {}; }}", zone.height * zone.metatile_factor)?;
 
     writeln!(&mut writer, "\tconstexpr uint8_t floor_tiles[{}];", zone.width * zone.height * zone.metatile_factor * zone.metatile_factor)?;
+    writeln!(&mut writer, "\tconstexpr uint8_t ceiling_tiles[{}];", zone.width * zone.height * zone.metatile_factor * zone.metatile_factor)?;
 
     writeln!(&mut writer, "}}")?;
 
@@ -37,9 +38,14 @@ pub fn write_implementation(destination: PathBuf, zone: &Zone) -> anyhow::Result
     writeln!(&mut writer)?;
     writeln!(&mut writer, "namespace sp::{} {{", zone.name)?;
 
-    let tiles_csv: Vec<String> = zone.floor.iter().map(|t| t.to_string()).collect();
+    let floor_tiles_csv: Vec<String> = zone.floor.iter().map(|t| t.to_string()).collect();
     writeln!(&mut writer, "\tconstexpr uint8_t floor_tiles[{}] = {{", zone.width * zone.height * zone.metatile_factor * zone.metatile_factor)?;
-    writeln!(&mut writer, "\t\t{}", tiles_csv.join(","))?;
+    writeln!(&mut writer, "\t\t{}", floor_tiles_csv.join(","))?;
+    writeln!(&mut writer, "}}")?;
+
+    let ceiling_tiles_csv: Vec<String> = zone.ceiling.iter().map(|t| t.to_string()).collect();
+    writeln!(&mut writer, "\tconstexpr uint8_t ceiling_tiles[{}] = {{", zone.width * zone.height * zone.metatile_factor * zone.metatile_factor)?;
+    writeln!(&mut writer, "\t\t{}", ceiling_tiles_csv.join(","))?;
     writeln!(&mut writer, "}}")?;
 
     writeln!(&mut writer, "}}")?;
