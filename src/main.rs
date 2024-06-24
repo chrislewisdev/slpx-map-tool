@@ -30,6 +30,11 @@ fn main() {
 }
 
 fn run(args: &Args) -> anyhow::Result<()> {
+    let include_dir: PathBuf = [args.output_directory.clone(), PathBuf::from("include")].iter().collect();
+    // let src_dir: PathBuf = [args.output_directory.clone(), PathBuf::from("src")].iter().collect();
+    fs::create_dir_all(include_dir)?;
+    // fs::create_dir_all(src_dir)?;
+
     for entry in args.input_directory.read_dir().context("Failed to read directory")? {
         let path = entry.context("Failed to get file entry")?.path();
         if path.extension() == Some(OsStr::new("tmx")) {
@@ -51,21 +56,10 @@ fn convert(path: &PathBuf, output_directory: &PathBuf) -> anyhow::Result<()> {
         .to_str()
         .context("Unable to convert file stem to string")?;
     let zone = Zone::from(&map, name.to_string())?;
-    // println!("{:?}", zone);
 
-    let mut header_path = PathBuf::new();
-    header_path.push(output_directory);
-    header_path.push(format!("sp_{}.h", name));
-
+    let header_path = [output_directory.clone(), PathBuf::from(format!("include/sp_{}.h", name))].iter().collect();
     println!("Writing {:?}", header_path);
     write_header(header_path, &zone)?;
-
-    let mut implementation_path = PathBuf::new();
-    implementation_path.push(output_directory);
-    implementation_path.push(format!("sp_{}.cpp", name));
-
-    println!("Writing {:?}", implementation_path);
-    write_implementation(implementation_path, &zone)?;
 
     Ok(())
 }
