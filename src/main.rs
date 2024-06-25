@@ -1,15 +1,13 @@
-mod model;
 mod de;
+mod model;
 mod se;
 
 use anyhow::Context;
 use clap::{command, Parser};
-use std::{
-    ffi::OsStr, fs, io::BufReader, path::PathBuf
-};
 use de::*;
 use model::*;
 use se::*;
+use std::{ffi::OsStr, fs, io::BufReader, path::PathBuf};
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
@@ -30,7 +28,9 @@ fn main() {
 }
 
 fn run(args: &Args) -> anyhow::Result<()> {
-    let include_dir: PathBuf = [args.output_directory.clone(), PathBuf::from("include")].iter().collect();
+    let include_dir: PathBuf = [args.output_directory.clone(), PathBuf::from("include")]
+        .iter()
+        .collect();
     // let src_dir: PathBuf = [args.output_directory.clone(), PathBuf::from("src")].iter().collect();
     fs::create_dir_all(include_dir)?;
     // fs::create_dir_all(src_dir)?;
@@ -57,7 +57,12 @@ fn convert(path: &PathBuf, output_directory: &PathBuf) -> anyhow::Result<()> {
         .context("Unable to convert file stem to string")?;
     let zone = Zone::from(&map, name.to_string())?;
 
-    let header_path = [output_directory.clone(), PathBuf::from(format!("include/sp_{}.h", name))].iter().collect();
+    let header_path = [
+        output_directory.clone(),
+        PathBuf::from(format!("include/sp_{}.h", name)),
+    ]
+    .iter()
+    .collect();
     println!("Writing {:?}", header_path);
     write_header(header_path, &zone)?;
 

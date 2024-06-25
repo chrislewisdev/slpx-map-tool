@@ -44,9 +44,7 @@ fn layer_to_tiles(map: &MapElement, layer: &LayerElement) -> anyhow::Result<Vec<
         .replace("\n", "")
         .replace("\r", "")
         .split(",")
-        .map(|tile| {
-            str::parse::<u16>(tile).context(format!("Failed to parse tile value: {}", tile))
-        })
+        .map(|tile| str::parse::<u16>(tile).context(format!("Failed to parse tile value: {}", tile)))
         .collect();
     let metatiles = metatiles_result?;
 
