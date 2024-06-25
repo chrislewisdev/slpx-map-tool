@@ -42,6 +42,7 @@ fn layer_to_tiles(map: &MapElement, layer: &LayerElement) -> anyhow::Result<Vec<
         .context("Missing tile data for floor layer.")?;
     let metatiles_result: Result<Vec<u16>, _> = data
         .replace("\n", "")
+        .replace("\r", "")
         .split(",")
         .map(|tile| {
             str::parse::<u16>(tile).context(format!("Failed to parse tile value: {}", tile))
