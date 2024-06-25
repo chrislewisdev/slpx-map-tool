@@ -61,7 +61,9 @@ fn layer_to_tiles(map: &MapElement, layer: &LayerElement) -> anyhow::Result<Vec<
     let mt_squared = metatile_factor * metatile_factor;
     let tiles: Vec<u16> = metatiles
         .iter()
-        .flat_map(|&tile| (tile * mt_squared..tile * mt_squared + mt_squared).collect::<Vec<u16>>())
+        // Tiled uses 0 for 'null' tiles, so all real tile values are offset by 1
+        .map(|&tile| if tile > 0 { tile - 1} else { tile })
+        .flat_map(|tile| (tile * mt_squared..tile * mt_squared + mt_squared).collect::<Vec<u16>>())
         .collect();
 
     Ok(tiles)
