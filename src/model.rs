@@ -1,10 +1,12 @@
+use std::str::FromStr;
+
 use crate::de::*;
 use anyhow::{bail, Context};
 
 #[derive(Debug)]
 pub struct Point {
-    pub x: u32,
-    pub y: u32,
+    pub x: i32,
+    pub y: i32,
 }
 
 #[derive(Debug)]
@@ -69,6 +71,23 @@ fn layer_to_tiles(map: &MapElement, layer: &LayerElement) -> anyhow::Result<Vec<
     Ok(tiles)
 }
 
+impl FromStr for EnemyType {
+    type Err = anyhow::Error;
+
+    fn from_str(_input: &str) -> anyhow::Result<EnemyType> {
+        Ok(EnemyType::Placeholder)
+    }
+}
+
+impl Enemy {
+    pub fn from(object: &ObjectElement) -> anyhow::Result<Enemy> {
+        Ok(Enemy {
+            type_id: EnemyType::from_str(object.type_id.as_str())?,
+            spawn_point: Point { x: object.x.floor() as i32, y: object.y.floor() as i32 },
+        })
+    }
+}
+
 impl Zone {
     pub fn from(map: &MapElement, name: String) -> anyhow::Result<Zone> {
         let floor_layer = map
@@ -85,6 +104,16 @@ impl Zone {
         let floor = layer_to_tiles(map, &floor_layer)?;
         let ceiling = layer_to_tiles(map, &ceiling_layer)?;
 
+        let spawn_layer = map.object_groups.iter().find(|g| g.name == "Spawn").context("Missing object group 'Spawn'")?;
+        let spawn_object = spawn_layer.object.get(0).context("Missing object for spawn point")?;
+        let spawn_point = Point {
+            x: spawn_object.x.floor() as i32,
+            y: spawn_object.y.floor() as i32,
+        };
+
+        let enemies_layer = map.object_groups.iter().find(|g| g.name == "Enemies").context("Missing object group 'Enemies'")?;
+        let enemies: Result<Vec<Enemy>, _> = enemies_layer.object.iter().map(|o| Enemy::from(o)).collect();
+
         let metatile_factor = map.tile_width / 8;
         Ok(Zone {
             name,
@@ -93,8 +122,8 @@ impl Zone {
             metatile_factor,
             floor,
             ceiling,
-            enemies: vec![],
-            player_spawn_point: Point { x: 0, y: 0 },
+            enemies: enemies?,
+            player_spawn_point: spawn_point,
         })
     }
 }
