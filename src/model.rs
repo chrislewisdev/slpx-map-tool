@@ -64,7 +64,7 @@ fn layer_to_tiles(map: &MapElement, layer: &LayerElement) -> anyhow::Result<Vec<
     let tiles: Vec<u16> = metatiles
         .iter()
         // Tiled uses 0 for 'null' tiles, so all real tile values are offset by 1
-        .map(|&tile| if tile > 0 { tile - 1} else { tile })
+        .map(|&tile| if tile > 0 { tile - 1 } else { tile })
         .flat_map(|tile| (tile * mt_squared..tile * mt_squared + mt_squared).collect::<Vec<u16>>())
         .collect();
 
@@ -80,16 +80,22 @@ impl FromStr for EnemyType {
 }
 
 impl Enemy {
-    pub fn from(object: &ObjectElement) -> anyhow::Result<Enemy> {
+    pub fn from(object: &ObjectElement, map_half_width: i32, map_half_height: i32) -> anyhow::Result<Enemy> {
         Ok(Enemy {
             type_id: EnemyType::from_str(object.type_id.as_str())?,
-            spawn_point: Point { x: object.x.floor() as i32, y: object.y.floor() as i32 },
+            spawn_point: Point {
+                x: object.x.floor() as i32 - map_half_width,
+                y: map_half_height - object.y.floor() as i32,
+            },
         })
     }
 }
 
 impl Zone {
     pub fn from(map: &MapElement, name: String) -> anyhow::Result<Zone> {
+        let half_width: i32 = (map.width * map.tile_width / 2) as i32;
+        let half_height = (map.height * map.tile_width / 2) as i32;
+
         let floor_layer = map
             .layer
             .iter()
@@ -104,15 +110,27 @@ impl Zone {
         let floor = layer_to_tiles(map, &floor_layer)?;
         let ceiling = layer_to_tiles(map, &ceiling_layer)?;
 
-        let spawn_layer = map.object_groups.iter().find(|g| g.name == "Spawn").context("Missing object group 'Spawn'")?;
+        let spawn_layer = map
+            .object_groups
+            .iter()
+            .find(|g| g.name == "Spawn")
+            .context("Missing object group 'Spawn'")?;
         let spawn_object = spawn_layer.object.get(0).context("Missing object for spawn point")?;
         let spawn_point = Point {
-            x: spawn_object.x.floor() as i32,
-            y: spawn_object.y.floor() as i32,
+            x: spawn_object.x.floor() as i32 - half_width,
+            y: half_height - spawn_object.y.floor() as i32,
         };
 
-        let enemies_layer = map.object_groups.iter().find(|g| g.name == "Enemies").context("Missing object group 'Enemies'")?;
-        let enemies: Result<Vec<Enemy>, _> = enemies_layer.object.iter().map(|o| Enemy::from(o)).collect();
+        let enemies_layer = map
+            .object_groups
+            .iter()
+            .find(|g| g.name == "Enemies")
+            .context("Missing object group 'Enemies'")?;
+        let enemies: Result<Vec<Enemy>, _> = enemies_layer
+            .object
+            .iter()
+            .map(|o| Enemy::from(o, half_width, half_height))
+            .collect();
 
         let metatile_factor = map.tile_width / 8;
         Ok(Zone {

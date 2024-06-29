@@ -33,12 +33,9 @@ fn run(args: &Args) -> anyhow::Result<()> {
         .collect();
     fs::create_dir_all(include_dir)?;
 
-    let enemy_spawn_header_path = [
-        args.output_directory.clone(),
-        PathBuf::from("include/sp_enemy_spawn.h"),
-    ]
-    .iter()
-    .collect();
+    let enemy_spawn_header_path = [args.output_directory.clone(), PathBuf::from("include/sp_enemy_spawn.h")]
+        .iter()
+        .collect();
     println!("Writing {:?}", enemy_spawn_header_path);
     write_enemy_spawn_header(enemy_spawn_header_path)?;
 
