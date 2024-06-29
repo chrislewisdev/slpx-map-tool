@@ -11,11 +11,10 @@ pub struct Point {
 
 #[derive(Debug)]
 pub enum EnemyType {
-    Placeholder,
-    Zombie,
     Tooth,
     Cage,
-    AppleThrower,
+    Creeper,
+    Thrower,
 }
 
 #[derive(Debug)]
@@ -74,8 +73,25 @@ fn layer_to_tiles(map: &MapElement, layer: &LayerElement) -> anyhow::Result<Vec<
 impl FromStr for EnemyType {
     type Err = anyhow::Error;
 
-    fn from_str(_input: &str) -> anyhow::Result<EnemyType> {
-        Ok(EnemyType::Placeholder)
+    fn from_str(input: &str) -> anyhow::Result<EnemyType> {
+        match input {
+            "tooth" => Ok(EnemyType::Tooth),
+            "cage" => Ok(EnemyType::Cage),
+            "creeper" => Ok(EnemyType::Creeper),
+            "thrower" => Ok(EnemyType::Thrower),
+            _ => bail!("Unrecognised enemy type"),
+        }
+    }
+}
+
+impl EnemyType {
+    pub fn to_str(self: &EnemyType) -> &str {
+        match self {
+            EnemyType::Tooth => "tooth",
+            EnemyType::Cage => "cage",
+            EnemyType::Creeper => "creeper",
+            EnemyType::Thrower => "thrower",
+        }
     }
 }
 

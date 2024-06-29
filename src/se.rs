@@ -16,7 +16,8 @@ pub fn write_enemy_spawn_header(destination: PathBuf) -> anyhow::Result<()> {
     writeln!(&mut writer, "#pragma once")?;
     writeln!(&mut writer)?;
     writeln!(&mut writer, "#include \"bn_core.h\"")?;
-    writeln!(&mut writer, "#include \"bn_string_view.h\"")?;
+    writeln!(&mut writer)?;
+    writeln!(&mut writer, "#include \"enemy_type.h\"")?;
     writeln!(&mut writer)?;
 
     writeln!(&mut writer, "namespace sp {{")?;
@@ -25,8 +26,8 @@ pub fn write_enemy_spawn_header(destination: PathBuf) -> anyhow::Result<()> {
     writeln!(&mut writer, "\t\tpublic:")?;
     writeln!(&mut writer, "\t\t\tconst int16_t x;")?;
     writeln!(&mut writer, "\t\t\tconst int16_t y;")?;
-    writeln!(&mut writer, "\t\t\tconst bn::string_view type_id;")?;
-    writeln!(&mut writer, "\t\t\tconstexpr enemy_spawn(uint16_t _x, uint16_t _y, const bn::string_view& _type_id): x(_x), y(_y), type_id(_type_id) {{}}")?;
+    writeln!(&mut writer, "\t\t\tconst sp::enemy_type& enemy_type;")?;
+    writeln!(&mut writer, "\t\t\tconstexpr enemy_spawn(uint16_t _x, uint16_t _y, const sp::enemy_type& _enemy_type): x(_x), y(_y), enemy_type(_enemy_type) {{}}")?;
     writeln!(&mut writer, "\t}};")?;
 
     writeln!(&mut writer, "}}")?;
@@ -110,8 +111,8 @@ pub fn write_header(destination: PathBuf, zone: &Zone) -> anyhow::Result<()> {
     for enemy in &zone.enemies {
         writeln!(
             &mut writer,
-            "\t\tsp::enemy_spawn({}, {}, \"basic\"),",
-            enemy.spawn_point.x, enemy.spawn_point.y
+            "\t\tsp::enemy_spawn({}, {}, enemy_type::{}),",
+            enemy.spawn_point.x, enemy.spawn_point.y, enemy.type_id.to_str()
         )?;
     }
     writeln!(&mut writer, "\t}};")?;
