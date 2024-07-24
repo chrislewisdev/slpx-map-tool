@@ -36,6 +36,20 @@ pub struct ObjectGroupElement {
 }
 
 #[derive(Debug, Deserialize)]
+pub struct PropertyElement {
+    #[serde(rename = "@name")]
+    pub name: String,
+    #[serde(rename = "@value")]
+    pub value: String,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct PropertiesElement {
+    #[serde(default, rename = "property")]
+    pub properties: Vec<PropertyElement>,
+}
+
+#[derive(Debug, Deserialize)]
 pub struct ObjectElement {
     #[serde(rename = "@type")]
     pub type_id: String,
@@ -43,4 +57,5 @@ pub struct ObjectElement {
     pub x: f32,
     #[serde(rename = "@y")]
     pub y: f32,
+    pub properties: Option<PropertiesElement>,
 }

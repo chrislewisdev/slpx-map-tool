@@ -51,6 +51,7 @@ pub fn write_header(destination: PathBuf, zone: &Zone) -> anyhow::Result<()> {
     writeln!(&mut writer, "#include \"bn_affine_bg_map_item.h\"")?;
     writeln!(&mut writer)?;
     writeln!(&mut writer, "#include \"sp_enemy_spawn.h\"")?;
+    writeln!(&mut writer, "#include \"portal.h\"")?;
     writeln!(&mut writer)?;
     writeln!(&mut writer, "namespace sp::{} {{", zone.name)?;
 
@@ -112,7 +113,20 @@ pub fn write_header(destination: PathBuf, zone: &Zone) -> anyhow::Result<()> {
         writeln!(
             &mut writer,
             "\t\tsp::enemy_spawn({}, {}, enemy_type::{}),",
-            enemy.spawn_point.x, enemy.spawn_point.y, enemy.type_id.to_str()
+            enemy.spawn_point.x,
+            enemy.spawn_point.y,
+            enemy.type_id.to_str()
+        )?;
+    }
+    writeln!(&mut writer, "\t}};")?;
+
+    // Portals
+    writeln!(&mut writer, "\tconstexpr sp::portal portals[] = {{")?;
+    for portal in &zone.portals {
+        writeln!(
+            &mut writer,
+            "\t\tsp::portal(sp::world_zone::{}, {}, {}),",
+            portal.target_zone, portal.position.x, portal.position.y
         )?;
     }
     writeln!(&mut writer, "\t}};")?;

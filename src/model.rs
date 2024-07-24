@@ -24,6 +24,12 @@ pub struct Enemy {
 }
 
 #[derive(Debug)]
+pub struct Portal {
+    pub target_zone: String,
+    pub position: Point,
+}
+
+#[derive(Debug)]
 pub struct Zone {
     pub name: String,
     pub width: u16,
@@ -33,13 +39,14 @@ pub struct Zone {
     pub ceiling: Vec<u16>,
     pub enemies: Vec<Enemy>,
     pub player_spawn_point: Point,
+    pub portals: Vec<Portal>,
 }
 
 fn layer_to_tiles(map: &MapElement, layer: &LayerElement) -> anyhow::Result<Vec<u16>> {
     let data = layer
         .data
         .content
-        .clone()
+        .as_ref()
         .context("Missing tile data for floor layer.")?;
     let metatiles_result: Result<Vec<u16>, _> = data
         .replace("\n", "")
@@ -107,6 +114,36 @@ impl Enemy {
     }
 }
 
+impl Portal {
+    pub fn from(object: &ObjectElement, map_half_width: i32, map_half_height: i32) -> anyhow::Result<Portal> {
+        let props = &object.properties.as_ref().context("Missing properties for portal")?.properties;
+        let zone = props
+            .iter()
+            .find(|p| p.name == "zone")
+            .context("Missing property 'zone' on portal")?;
+        let x_prop = props
+            .iter()
+            .find(|p| p.name == "x")
+            .context("Missing property 'x' on portal")?;
+        let y_prop = props
+            .iter()
+            .find(|p| p.name == "y")
+            .context("Missing property 'y' on portal")?;
+        let x = str::parse::<i32>(&x_prop.value)
+            .context(format!("Failed to parse '{}' as x value for portal", x_prop.value))?;
+        let y = str::parse::<i32>(&y_prop.value)
+            .context(format!("Failed to parse '{}' as y value for portal", y_prop.value))?;
+
+        Ok(Portal {
+            target_zone: zone.value.clone(),
+            position: Point {
+                x: x - map_half_width,
+                y: map_half_height - y,
+            },
+        })
+    }
+}
+
 impl Zone {
     pub fn from(map: &MapElement, name: String) -> anyhow::Result<Zone> {
         let half_width: i32 = (map.width * map.tile_width / 2) as i32;
@@ -148,6 +185,17 @@ impl Zone {
             .map(|o| Enemy::from(o, half_width, half_height))
             .collect();
 
+        let portals_layer = map
+            .object_groups
+            .iter()
+            .find(|g| g.name == "Portals")
+            .context("Missing object group 'Portals'")?;
+        let portals: Result<Vec<Portal>, _> = portals_layer
+            .object
+            .iter()
+            .map(|o| Portal::from(o, half_width, half_height))
+            .collect();
+
         let metatile_factor = map.tile_width / 8;
         Ok(Zone {
             name,
@@ -158,6 +206,7 @@ impl Zone {
             ceiling,
             enemies: enemies?,
             player_spawn_point: spawn_point,
+            portals: portals?,
         })
     }
 }
