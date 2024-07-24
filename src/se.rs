@@ -125,8 +125,8 @@ pub fn write_header(destination: PathBuf, zone: &Zone) -> anyhow::Result<()> {
     for portal in &zone.portals {
         writeln!(
             &mut writer,
-            "\t\tsp::portal(sp::world_zone::{}, {}, {}),",
-            portal.target_zone, portal.position.x, portal.position.y
+            "\t\tsp::portal(sp::world_zone::{}, {}, {}, {}, {}, {}, {}),",
+            portal.target_zone, portal.position.x, portal.position.y, portal.width, portal.height, portal.destination.x, portal.destination.y
         )?;
     }
     writeln!(&mut writer, "\t}};")?;

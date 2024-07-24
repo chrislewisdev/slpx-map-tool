@@ -27,6 +27,9 @@ pub struct Enemy {
 pub struct Portal {
     pub target_zone: String,
     pub position: Point,
+    pub width: i32,
+    pub height: i32,
+    pub destination: Point,
 }
 
 #[derive(Debug)]
@@ -137,6 +140,12 @@ impl Portal {
         Ok(Portal {
             target_zone: zone.value.clone(),
             position: Point {
+                x: object.x.floor() as i32 - map_half_width,
+                y: map_half_height - object.y.floor() as i32,
+            },
+            width: 50,
+            height: 50,
+            destination: Point {
                 x: x - map_half_width,
                 y: map_half_height - y,
             },
