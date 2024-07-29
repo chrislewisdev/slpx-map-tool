@@ -197,13 +197,15 @@ impl Zone {
         let portals_layer = map
             .object_groups
             .iter()
-            .find(|g| g.name == "Portals")
-            .context("Missing object group 'Portals'")?;
-        let portals: Result<Vec<Portal>, _> = portals_layer
+            .find(|g| g.name == "Portals");
+        let portals: Result<Vec<Portal>, _> = match portals_layer {
+            Some(layer) => layer
             .object
             .iter()
             .map(|o| Portal::from(o, half_width, half_height))
-            .collect();
+            .collect(),
+            None => Ok(Vec::new())
+        };
 
         let metatile_factor = map.tile_width / 8;
         Ok(Zone {
