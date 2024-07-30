@@ -5,36 +5,6 @@ use std::{
     path::PathBuf,
 };
 
-pub fn write_enemy_spawn_header(destination: PathBuf) -> anyhow::Result<()> {
-    let file = OpenOptions::new()
-        .write(true)
-        .create(true)
-        .truncate(true)
-        .open(destination)?;
-    let mut writer = BufWriter::new(file);
-
-    writeln!(&mut writer, "#pragma once")?;
-    writeln!(&mut writer)?;
-    writeln!(&mut writer, "#include \"bn_core.h\"")?;
-    writeln!(&mut writer)?;
-    writeln!(&mut writer, "#include \"enemy_type.h\"")?;
-    writeln!(&mut writer)?;
-
-    writeln!(&mut writer, "namespace sp {{")?;
-
-    writeln!(&mut writer, "\tclass enemy_spawn {{")?;
-    writeln!(&mut writer, "\t\tpublic:")?;
-    writeln!(&mut writer, "\t\t\tconst int16_t x;")?;
-    writeln!(&mut writer, "\t\t\tconst int16_t y;")?;
-    writeln!(&mut writer, "\t\t\tconst sp::enemy_type& enemy_type;")?;
-    writeln!(&mut writer, "\t\t\tconstexpr enemy_spawn(uint16_t _x, uint16_t _y, const sp::enemy_type& _enemy_type): x(_x), y(_y), enemy_type(_enemy_type) {{}}")?;
-    writeln!(&mut writer, "\t}};")?;
-
-    writeln!(&mut writer, "}}")?;
-
-    Ok(())
-}
-
 pub fn write_header(destination: PathBuf, zone: &Zone) -> anyhow::Result<()> {
     let file = OpenOptions::new()
         .write(true)
@@ -50,7 +20,7 @@ pub fn write_header(destination: PathBuf, zone: &Zone) -> anyhow::Result<()> {
     writeln!(&mut writer, "#include \"bn_span.h\"")?;
     writeln!(&mut writer, "#include \"bn_affine_bg_map_item.h\"")?;
     writeln!(&mut writer)?;
-    writeln!(&mut writer, "#include \"sp_enemy_spawn.h\"")?;
+    writeln!(&mut writer, "#include \"enemy_spawn.h\"")?;
     // writeln!(&mut writer, "#include \"portal.h\"")?;
     writeln!(&mut writer)?;
     writeln!(&mut writer, "namespace sp::{} {{", zone.name)?;

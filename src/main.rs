@@ -33,15 +33,6 @@ fn run(args: &Args) -> anyhow::Result<()> {
         .collect();
     fs::create_dir_all(include_dir)?;
 
-    let enemy_spawn_header_path: PathBuf = [args.output_directory.clone(), PathBuf::from("include/sp_enemy_spawn.h")]
-        .iter()
-        .collect();
-    // TODO: Would be awesome to write only when the header contents have changed
-    if !enemy_spawn_header_path.exists() {
-        println!("Writing {:?}", enemy_spawn_header_path);
-        write_enemy_spawn_header(enemy_spawn_header_path)?;
-    }
-
     for entry in args.input_directory.read_dir().context("Failed to read directory")? {
         let path = entry.context("Failed to get file entry")?.path();
         if path.extension() == Some(OsStr::new("tmx")) {
