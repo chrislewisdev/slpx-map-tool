@@ -119,7 +119,11 @@ impl Enemy {
 
 impl Portal {
     pub fn from(object: &ObjectElement, map_half_width: i32, map_half_height: i32) -> anyhow::Result<Portal> {
-        let props = &object.properties.as_ref().context("Missing properties for portal")?.properties;
+        let props = &object
+            .properties
+            .as_ref()
+            .context("Missing properties for portal")?
+            .properties;
         let zone = props
             .iter()
             .find(|p| p.name == "zone")
@@ -194,17 +198,14 @@ impl Zone {
             .map(|o| Enemy::from(o, half_width, half_height))
             .collect();
 
-        let portals_layer = map
-            .object_groups
-            .iter()
-            .find(|g| g.name == "Portals");
+        let portals_layer = map.object_groups.iter().find(|g| g.name == "Portals");
         let portals: Result<Vec<Portal>, _> = match portals_layer {
             Some(layer) => layer
-            .object
-            .iter()
-            .map(|o| Portal::from(o, half_width, half_height))
-            .collect(),
-            None => Ok(Vec::new())
+                .object
+                .iter()
+                .map(|o| Portal::from(o, half_width, half_height))
+                .collect(),
+            None => Ok(Vec::new()),
         };
 
         let metatile_factor = map.tile_width / 8;

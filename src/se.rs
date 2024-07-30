@@ -95,17 +95,23 @@ pub fn write_header(destination: PathBuf, zone: &Zone) -> anyhow::Result<()> {
     writeln!(&mut writer, "\t}};")?;
 
     // Portals
-    /*if zone.portals.len() > 0 {
+    if zone.portals.len() > 0 {
         writeln!(&mut writer, "\tconstexpr sp::portal portals[] = {{")?;
         for portal in &zone.portals {
             writeln!(
                 &mut writer,
-                "\t\tsp::portal(sp::world_zone::{}, {}, {}, {}, {}, {}, {}),",
-                portal.target_zone, portal.position.x, portal.position.y, portal.width, portal.height, portal.destination.x, portal.destination.y
+                "\t\tsp::portal(\"{}\", {}, {}, {}, {}, {}, {}),",
+                portal.target_zone,
+                portal.position.x,
+                portal.position.y,
+                portal.width,
+                portal.height,
+                portal.destination.x,
+                portal.destination.y
             )?;
         }
         writeln!(&mut writer, "\t}};")?;
-    }*/
+    }
 
     writeln!(
         &mut writer,
@@ -115,9 +121,17 @@ pub fn write_header(destination: PathBuf, zone: &Zone) -> anyhow::Result<()> {
         &mut writer,
         "\tconstexpr bn::affine_bg_item ceiling(bn::affine_bg_tiles_items::tiles_v1, bn::affine_bg_tiles_items::tiles_v1_palette, ceiling_map);"
     )?;
+
+    // If there is no portals array, gotta use an empty span instead
+    let portals_ref = if zone.portals.len() > 0 {
+        "portals"
+    } else {
+        "bn::span<const portal>()"
+    };
     writeln!(
         &mut writer,
-        "\tconstexpr world_zone zone(floor, ceiling, vec3(spawn_point_x(), 16, spawn_point_y()), enemy_spawns);"
+        "\tconstexpr world_zone zone(floor, ceiling, vec3(spawn_point_x(), 16, spawn_point_y()), enemy_spawns, {});",
+        portals_ref
     )?;
 
     writeln!(&mut writer, "}}")?;
