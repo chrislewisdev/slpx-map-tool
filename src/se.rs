@@ -20,8 +20,12 @@ pub fn write_header(destination: PathBuf, zone: &Zone) -> anyhow::Result<()> {
     writeln!(&mut writer, "#include \"bn_span.h\"")?;
     writeln!(&mut writer, "#include \"bn_affine_bg_map_item.h\"")?;
     writeln!(&mut writer)?;
+    writeln!(&mut writer, "#include \"bn_affine_bg_tiles_items_tiles_v1.h\"")?;
+    writeln!(&mut writer)?;
+    writeln!(&mut writer, "#include \"vec3.h\"")?;
     writeln!(&mut writer, "#include \"enemy_spawn.h\"")?;
     // writeln!(&mut writer, "#include \"portal.h\"")?;
+    writeln!(&mut writer, "#include \"world_zone.h\"")?;
     writeln!(&mut writer)?;
     writeln!(&mut writer, "namespace sp::{} {{", zone.name)?;
 
@@ -102,6 +106,19 @@ pub fn write_header(destination: PathBuf, zone: &Zone) -> anyhow::Result<()> {
         }
         writeln!(&mut writer, "\t}};")?;
     }*/
+
+    writeln!(
+        &mut writer,
+        "\tconstexpr bn::affine_bg_item floor(bn::affine_bg_tiles_items::tiles_v1, bn::affine_bg_tiles_items::tiles_v1_palette, floor_map);"
+    )?;
+    writeln!(
+        &mut writer,
+        "\tconstexpr bn::affine_bg_item ceiling(bn::affine_bg_tiles_items::tiles_v1, bn::affine_bg_tiles_items::tiles_v1_palette, ceiling_map);"
+    )?;
+    writeln!(
+        &mut writer,
+        "\tconstexpr world_zone zone(floor, ceiling, vec3(spawn_point_x(), 16, spawn_point_y()), enemy_spawns);"
+    )?;
 
     writeln!(&mut writer, "}}")?;
 
