@@ -95,6 +95,27 @@ impl FromStr for EnemyType {
 }
 
 impl EnemyType {
+    fn from(object: &ObjectElement) -> anyhow::Result<EnemyType> {
+        if let Some(name) = &object.name {
+            return match name.to_lowercase().as_str() {
+                "crawler" => Ok(EnemyType::Creeper),
+                "apple zombie" => Ok(EnemyType::Thrower),
+                _ => bail!("Unrecognised enemy name")
+            };
+        }
+
+        if let Some(type_id) = &object.type_id {
+            return match type_id.as_str() {
+                "tooth" => Ok(EnemyType::Tooth),
+                "cage" => Ok(EnemyType::Cage),
+                "creeper" => Ok(EnemyType::Creeper),
+                "thrower" => Ok(EnemyType::Thrower),
+                _ => bail!("Unrecognised enemy type"),
+            };
+        }
+
+        bail!("No enemy type indicator");
+    }
     pub fn to_str(self: &EnemyType) -> &str {
         match self {
             EnemyType::Tooth => "tooth",
@@ -108,7 +129,7 @@ impl EnemyType {
 impl Enemy {
     pub fn from(object: &ObjectElement, map_half_width: i32, map_half_height: i32) -> anyhow::Result<Enemy> {
         Ok(Enemy {
-            type_id: EnemyType::from_str(object.type_id.as_str())?,
+            type_id: EnemyType::from(object)?,
             spawn_point: Point {
                 x: object.x.floor() as i32 - map_half_width,
                 y: map_half_height - object.y.floor() as i32,

@@ -51,8 +51,10 @@ pub struct PropertiesElement {
 
 #[derive(Debug, Deserialize)]
 pub struct ObjectElement {
+    #[serde(rename = "@name")]
+    pub name: Option<String>,
     #[serde(rename = "@type")]
-    pub type_id: String,
+    pub type_id: Option<String>,
     #[serde(rename = "@x")]
     pub x: f32,
     #[serde(rename = "@y")]
