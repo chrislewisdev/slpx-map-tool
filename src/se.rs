@@ -5,6 +5,36 @@ use std::{
     path::PathBuf,
 };
 
+pub fn write_zones_header(destination: PathBuf, zone_names: &Vec<String>) -> anyhow::Result<()> {
+    let file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(destination)?;
+    let mut writer = BufWriter::new(file);
+
+    writeln!(&mut writer, "#pragma once")?;
+    writeln!(&mut writer)?;
+    for zone in zone_names {
+        writeln!(&mut writer, "#include \"sp_{}.h\"", zone)?;
+    }
+    writeln!(&mut writer)?;
+
+    writeln!(&mut writer, "namespace sp {{")?;
+    writeln!(&mut writer, "\tconstexpr const world_zone* get_zone_by_name(const bn::string_view& name) {{")?;
+    for zone in zone_names {
+        let shortname = zone.trim_start_matches("zone_");
+        writeln!(&mut writer, "\t\tif (name == \"{}\") return &sp::{}::zone;", shortname, zone)?;
+    }
+    writeln!(&mut writer)?;
+    writeln!(&mut writer, "\t\tBN_ERROR(\"Unrecognised zone:\", name);")?;
+    writeln!(&mut writer, "\t\treturn nullptr;")?;
+    writeln!(&mut writer, "\t}}")?;
+    writeln!(&mut writer, "}}")?;
+
+    Ok(())
+}
+
 pub fn write_header(destination: PathBuf, zone: &Zone) -> anyhow::Result<()> {
     let file = OpenOptions::new()
         .write(true)

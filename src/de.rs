@@ -49,6 +49,8 @@ pub struct PropertiesElement {
     pub properties: Vec<PropertyElement>,
 }
 
+fn default_dimension() -> f32 { 0.0 }
+
 #[derive(Debug, Deserialize)]
 pub struct ObjectElement {
     #[serde(rename = "@name")]
@@ -59,5 +61,9 @@ pub struct ObjectElement {
     pub x: f32,
     #[serde(rename = "@y")]
     pub y: f32,
+    #[serde(rename = "@width", default = "default_dimension")]
+    pub width: f32,
+    #[serde(rename = "@height", default = "default_dimension")]
+    pub height: f32,
     pub properties: Option<PropertiesElement>,
 }

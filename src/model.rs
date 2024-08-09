@@ -168,8 +168,8 @@ impl Portal {
                 x: object.x.floor() as i32 - map_half_width,
                 y: map_half_height - object.y.floor() as i32,
             },
-            width: 50,
-            height: 50,
+            width: object.width as i32,
+            height: object.height as i32,
             destination: Point {
                 x: x - map_half_width,
                 y: map_half_height - y,
