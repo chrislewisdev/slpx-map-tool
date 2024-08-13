@@ -1,4 +1,4 @@
-use std::str::FromStr;
+use std::{path::PathBuf, str::FromStr};
 
 use crate::de::*;
 use anyhow::{bail, Context};
@@ -35,6 +35,7 @@ pub struct Portal {
 #[derive(Debug)]
 pub struct Zone {
     pub name: String,
+    pub tileset: String,
     pub width: u16,
     pub height: u16,
     pub metatile_factor: u16,
@@ -229,9 +230,14 @@ impl Zone {
             None => Ok(Vec::new()),
         };
 
+        let tileset_tsx = &map.tilesets.get(0).context("No tileset specified")?.source;
+        let path = PathBuf::from(tileset_tsx);
+        let tileset = path.file_stem().context("Unable to get filename from tileset path")?.to_string_lossy().to_string();
+
         let metatile_factor = map.tile_width / 8;
         Ok(Zone {
             name,
+            tileset,
             width: map.width,
             height: map.height,
             metatile_factor,

@@ -12,6 +12,14 @@ pub struct MapElement {
     pub layer: Vec<LayerElement>,
     #[serde(default, rename = "objectgroup")]
     pub object_groups: Vec<ObjectGroupElement>,
+    #[serde(default, rename = "tileset")]
+    pub tilesets: Vec<TilesetElement>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct TilesetElement {
+    #[serde(rename = "@source")]
+    pub source: String,
 }
 
 #[derive(Debug, Deserialize)]

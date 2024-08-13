@@ -50,7 +50,7 @@ pub fn write_header(destination: PathBuf, zone: &Zone) -> anyhow::Result<()> {
     writeln!(&mut writer, "#include \"bn_span.h\"")?;
     writeln!(&mut writer, "#include \"bn_affine_bg_map_item.h\"")?;
     writeln!(&mut writer)?;
-    writeln!(&mut writer, "#include \"bn_affine_bg_tiles_items_tiles_v2.h\"")?;
+    writeln!(&mut writer, "#include \"bn_affine_bg_tiles_items_{}.h\"", zone.tileset)?;
     writeln!(&mut writer)?;
     writeln!(&mut writer, "#include \"vec3.h\"")?;
     writeln!(&mut writer, "#include \"enemy_spawn.h\"")?;
@@ -147,11 +147,13 @@ pub fn write_header(destination: PathBuf, zone: &Zone) -> anyhow::Result<()> {
 
     writeln!(
         &mut writer,
-        "\tconstexpr bn::affine_bg_item floor(bn::affine_bg_tiles_items::tiles_v2, bn::affine_bg_tiles_items::tiles_v2_palette, floor_map);"
+        "\tconstexpr bn::affine_bg_item floor(bn::affine_bg_tiles_items::{}, bn::affine_bg_tiles_items::{}_palette, floor_map);",
+        zone.tileset, zone.tileset
     )?;
     writeln!(
         &mut writer,
-        "\tconstexpr bn::affine_bg_item ceiling(bn::affine_bg_tiles_items::tiles_v2, bn::affine_bg_tiles_items::tiles_v2_palette, ceiling_map);"
+        "\tconstexpr bn::affine_bg_item ceiling(bn::affine_bg_tiles_items::{}, bn::affine_bg_tiles_items::{}_palette, ceiling_map);",
+        zone.tileset, zone.tileset
     )?;
 
     // If there is no portals array, gotta use an empty span instead
