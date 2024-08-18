@@ -24,6 +24,12 @@ pub struct Enemy {
 }
 
 #[derive(Debug)]
+pub struct Prop {
+    pub name: String,
+    pub spawn_point: Point,
+}
+
+#[derive(Debug)]
 pub struct Portal {
     pub target_zone: String,
     pub position: Point,
@@ -44,6 +50,7 @@ pub struct Zone {
     pub enemies: Vec<Enemy>,
     pub player_spawn_point: Point,
     pub portals: Vec<Portal>,
+    pub props: Vec<Prop>,
 }
 
 fn layer_to_tiles(map: &MapElement, layer: &LayerElement) -> anyhow::Result<Vec<u16>> {
@@ -179,6 +186,18 @@ impl Portal {
     }
 }
 
+impl Prop {
+    pub fn from(object: &ObjectElement, map_half_width: i32, map_half_height: i32) -> anyhow::Result<Prop> {
+        Ok(Prop {
+            name: object.name.clone().context("Missing name for prop")?,
+            spawn_point: Point {
+                x: object.x.floor() as i32 - map_half_width,
+                y: map_half_height - object.y.floor() as i32,
+            },
+        })
+    }
+}
+
 impl Zone {
     pub fn from(map: &MapElement, name: String) -> anyhow::Result<Zone> {
         let half_width: i32 = (map.width * map.tile_width / 2) as i32;
@@ -234,6 +253,16 @@ impl Zone {
         let path = PathBuf::from(tileset_tsx);
         let tileset = path.file_stem().context("Unable to get filename from tileset path")?.to_string_lossy().to_string();
 
+        let props_layer = map.object_groups.iter().find(|g| g.name == "Props");
+        let props: Result<Vec<Prop>, _> = match props_layer {
+            Some(layer) => layer
+                .object
+                .iter()
+                .map(|o| Prop::from(o, half_width, half_height))
+                .collect(),
+            None => Ok(Vec::new()),
+        };
+
         let metatile_factor = map.tile_width / 8;
         Ok(Zone {
             name,
@@ -246,6 +275,7 @@ impl Zone {
             enemies: enemies?,
             player_spawn_point: spawn_point,
             portals: portals?,
+            props: props?
         })
     }
 }
